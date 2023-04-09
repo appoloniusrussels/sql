@@ -1,16 +1,23 @@
-
-
-with cte as (
+with cte as(
 select 
-hall_id, start_date, end_date
+*, ROW_NUMBER() over(order by hall_id) event_id
 from 
-hall_events 
+hall_events )
 
-union ALL
-select 
-h.hall_id, h.start_date, h.end_date
-from 
-hall_events h join cte on cte.hall_id=h.hall_id
-and h.start_date BETWEEN cte.start_date and cte.end_date
+,cte1 as(
+    select 
+    hall_id, start_date, end_date,event_id, 1 as flg
+    from cte where event_id=1
+    union ALL
+    select 
+    cte.hall_id, cte.start_date, cte.end_date,cte.event_id
+    ,case when cte.hall_id=cte1.hall_id and (cte.start_date  between cte1.start_date and cte1.end_date
+    or cte1.start_date  between cte.start_date and cte.end_date) then 0 else 1 end + flg as flg
+    from 
+    cte1 join cte on cte1.event_id+1=cte.event_id 
 )
+
+select hall_id, min(start_date), max(end_date) from cte1 
+group by hall_id, flg
+
 
